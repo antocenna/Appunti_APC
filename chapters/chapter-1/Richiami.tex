@@ -1,9 +1,11 @@
  \section{Richiami di calcolatori elettronici}
 Il \textbf{Motorola 68k} è un microprocessore con architettura di tipo CISC, principalmente costituita da vari registri con diverse tipologie di utilizzo. Tali registri, però, non sono una caratteristica specifica dell'architettura del Motorola 68k, pertanto è buona norma introdurre l'architettura generale di vari tipologie di microprocessori. Tali caratteristiche, quindi, non sono intrinseche del solo Motorola 68k ma sono legate alla natura stessa delle architetture dei vari processori.
-ANDREA GAY
+
+Ricordiamo inoltre che un’architettura \textbf{CISC} (\textit{Complex Instruction Set Computer}) è caratterizzata da un set di istruzioni molto ampio e complesso, in cui ogni istruzione può eseguire operazioni articolate; questo riduce il numero di istruzioni necessarie nei programmi, ma richiede un hardware più sofisticato per gestirle.
+
 \subsection{Architettura generale}
-Quando si interagisce con le microarchitetture si lavora con vari tipologie di registri, la cui dimensione è descritta del costruttore.
-I registri possono essere divisi principalmente in registri utilizzabili dal programmatore (o registri utilizzabili) e quelli che non possono essere utilizzati dal programmatore (o non utilizzabili). Tale suddivisione vi è poichè alcuni registri all'interno della microarchitettura vengono utilizzati per effettuare delle operazioni pilotate dalla CU. Tali registri sono tutti interni alla CPU (Ricordando che la cpu è formata da CU, ALU e registri interni). I registri interni utilizzabili dal programmatore sono anche chiamati \textbf{registri macchina (o registri general-purpose)} e possono essere di vario tipo:
+Quando si interagisce con le microarchitetture si lavora con varie tipologie di registri, la cui dimensione è descritta del costruttore. \\
+I registri possono essere divisi principalmente in registri utilizzabili dal programmatore (o registri utilizzabili) e quelli che non possono essere utilizzati dal programmatore (o non utilizzabili). Tale suddivisione vi è poichè alcuni registri all'interno della microarchitettura vengono utilizzati per effettuare delle operazioni pilotate dalla CU. Tali registri sono tutti interni alla CPU (ricordando che la CPU è formata da CU, ALU e registri interni). I registri interni utilizzabili dal programmatore sono anche chiamati \textbf{registri macchina} (o \textbf{registri general-purpose}) e possono essere di vario tipo:
 
 \begin{itemize}
     \item \textbf{Registri Dato}: Registri che sono utilizzati per conservare dati su cui si può operare con varie tipologie di interazioni;
@@ -12,28 +14,113 @@ I registri possono essere divisi principalmente in registri utilizzabili dal pro
     \begin{itemize}
         \item \textbf{PC (Program Counter)}: memorizza l'indirizzo in memoria della prossima istruzione;
         \item \textbf{IR (Istruction Register)}: Contiene una copia dell'istruzione prelevata dalla memoria;
-        \item \textbf{SR(Status Register)}: registro di stato che contiene varie tipologie di informazione come il caso di overflow, di azzeramento del risultato, di privilegio di esecuzione (se in \textbf{administrator mode} e quindi con l'accesso ad A'7).
+        \item \textbf{SR(Status Register)}: registro di stato che contiene varie tipologie di informazioni come il caso di overflow, di azzeramento del risultato, di privilegio di esecuzione (se in \textit{administrator mode} e quindi con l'accesso ad A'7).
     \end{itemize}
 \end{itemize}
 
 Tra i registri a cui invece il programmatore non ha accesso vi sono:
 \begin{itemize}
     \item \textbf{MAR (Memory Access Register)}: Registro utilizzato dal processore per scrivere l'indirizzo di memoria a cui si vuole accedere;
-    \item \textbf{MBR (Memory Buffer Register)}: Registro che contiene il dato che si è letto/scritto in memoria (varia in base ai valori dei segnali di write e di read gestiti dalla CU);
+    \item \textbf{MBR (Memory Buffer Register)}: Registro che contiene il dato che si è letto/scritto in memoria (varia in base ai valori dei segnali di \textit{write} e di \textit{read} gestiti dalla CU);
 \end{itemize}
 
 \subsubsection{Memoria}
-La memoria, nell'analisi ad alto livello che stiamo conducendo, funziona come un blocco in cui sono memorizzati dati indicizzati. Per cui in base all'operazione della CU, questa modifica i valori di: MAR, MBR, segnale di read e di write.
+La memoria, nell'analisi ad alto livello che stiamo conducendo, funziona come un blocco in cui sono memorizzati dati indicizzati, per cui in base all'operazione della CU, questa modifica i valori di: MAR, MBR, read e write. \\
 I dati possono essere acceduti in memoria in lettura/scrittura in modi diversi, e in generale la loro disposizione in memoria può variare secondo i paradigmi: 
 \begin{itemize}
     \item \textbf{little-endian}: nella memorizzazione di un dato binario, riorganizzato in celle lunghe dei byte, i valori più significativi vengono memorizzati nelle celle con indirizzi più alti, mentre le meno significative in quelli con indirizzi più bassi:
     \item \textbf{big-endian}: nella memorizzazione di un dato binario, riorganizzato in celle lunghe 1 Byte, esso sarà memorizzato inserendo i bit più significativi nelle celle con indirizzo più basso mentre i bit meno significativi in quelle con indirizzo più alto;
 \end{itemize}
-Ai fini del funzionamento del processore è indifferente quale sia la tipologia di organizzazione dei dati in memoria. Ma bisogna averne una conoscenza perchè è importante far capire all'unità di controllo come deve trattare i dati che sta andando a prelevare. Nel caso del Motorola 68k ci troviamo a contatto con un processore con organizzazione big-endian.
-Oltre all'organizzazione dei dati un altro problema della gestione della memoria è l'\textbf{allineamento}, ovvero l'organizzazione delle celle di memoria in maniera indipendente.
-Nel caso del motorola 68k, sono consentiti gli accessi in memoria anche a porzioni diverse di byte, ma tali porzioni hanno il vincolo di poter essere obbligatoriamente o da 2 o da 4 Byte che iniziano in posizioni di memoria pari. Quindi si possono avere degli errori se si accede a posizioni di memoria dispari
-A volte quando si lavora con gli indirizzi di memoria si può andare anchein contro al problema dell'\textbf{aliasing}, ovvero un problema che riguarda l'accesso a locazioni di memoria sbagliate rispetto a quelle effettivamente desiderate (nel caso del 68k questo problema è dovuto al fatto che possiede 24 fili di bus ma i registri sono a 32 bit, per cui se prelevo un indirizzo dalla memoria, perdendo gli 8 bit più significativi, se faccio accesso all'indirizzo caricato, posso confonderlo con uno più piccolo).
-\\
+Ai fini del funzionamento del processore è indifferente quale sia la tipologia di organizzazione dei dati in memoria, ma bisogna averne una conoscenza perchè è importante far capire all'unità di controllo come deve trattare i dati che sta andando a prelevare. Nel caso del Motorola 68k ci troviamo a contatto con un processore con organizzazione big-endian.
+
+\vspace{1em}
+
+Oltre all'organizzazione dei dati, un altro problema della gestione della memoria è \\
+l'\textbf{allineamento}, ovvero il modo in cui le celle di memoria vengono organizzate e rese 
+accessibili. Nel caso del Motorola~68k, gli accessi in memoria possono avvenire anche a porzioni 
+inferiori alla word, ma con un vincolo importante: le operazioni su 2 o 4 Byte devono iniziare 
+obbligatoriamente in indirizzi di memoria \emph{pari}. Questo significa che un accesso a un indirizzo 
+dispari può generare un errore di allineamento, poiché il processore non è in grado di gestire 
+correttamente la lettura o scrittura di dati non allineati.
+
+\clearpage
+\textbf{Esempio di allineamento:}
+
+Si consideri la seguente disposizione di memoria:
+
+
+
+\[
+\begin{array}{c|c|c|c|c|c}
+\mathrm{Indirizzo} & 1000 & 1001 & 1002 & 1003 & 1004 \\
+\hline
+\mathrm{Contenuto} & A & B & C & D & E
+\end{array}
+\]
+
+
+
+Un accesso a una word (2 Byte) è valido se parte da un indirizzo pari, ad esempio:
+
+
+\[
+\mathrm{word\ a\ } 1000 \Rightarrow \{A, B\}
+\]
+
+
+
+Mentre un accesso a:
+
+
+\[
+\mathrm{word\ a\ } 1001 \Rightarrow \{B, C\}
+\]
+
+
+genera un errore, perché l'indirizzo 1001 è dispari e il 68k non può gestire word non allineate.
+
+\vspace{1em}
+
+Un ulteriore problema legato alla gestione degli indirizzi è l'\textbf{aliasing}. Questo fenomeno si 
+verifica quando due indirizzi diversi fanno riferimento, per errore, alla stessa locazione di memoria, 
+oppure quando un indirizzo viene interpretato in modo scorretto. Nel caso del 68k, l'aliasing è dovuto 
+al fatto che il processore possiede un bus di indirizzi a 24 bit, mentre i registri che contengono gli 
+indirizzi sono a 32 bit. Quando un indirizzo a 32 bit viene caricato dalla memoria, gli 8 bit più 
+significativi vengono scartati; di conseguenza, due indirizzi che differiscono solo in quei bit alti 
+possono essere confusi, portando il processore ad accedere a una locazione di memoria diversa da quella 
+intesa.
+
+\vspace{1em}
+\textbf{Esempio di aliasing:}
+
+Si considerino due indirizzi a 32 bit:
+
+
+
+\[
+A = \texttt{0x12FF3456}
+\qquad
+B = \texttt{0x00FF3456}
+\]
+
+
+
+Poiché il bus indirizzi è a 24 bit, il processore utilizza solo i 24 bit meno significativi:
+
+
+
+\[
+A_{\mathrm{effettivo}} = \texttt{0xFF3456}
+\qquad
+B_{\mathrm{effettivo}} = \texttt{0xFF3456}
+\]
+
+
+
+I due indirizzi, pur essendo diversi nei registri, vengono quindi interpretati come lo stesso indirizzo 
+fisico, causando un caso di aliasing.
+
+\vspace{1em}
 La memoria quindi memorizza varie tipologie di dati e di istruzioni. Pertanto è corretto dividere la memoria in due parti principali:
 
 \begin{itemize}
@@ -44,14 +131,14 @@ La memoria quindi memorizza varie tipologie di dati e di istruzioni. Pertanto è
 \subsection{Istruzioni}\label{par:istruzioni}
 In generale le istruzioni offerte dalle architetture, sono formate da tre principali parti:
 \begin{itemize}
-    \item \textbf{Codici operativi}: sono la porzione di un'istruzione in linguaggio macchina che indica quale operazione la CPU deve eseguire. Insieme ai suoi operandi, è ciò che compone un'istruzione macchina. Ogni architettura ha un proprio set di codici operativi e un formato di istruzione prestabilito;
+    \item \textbf{Codici operativi}: sono la porzione di un'istruzione in linguaggio macchina che indica quale operazione la CPU deve eseguire. Insieme ai suoi operandi, è ciò che compone un'istruzione macchina. Ogni architettura ha un proprio set di codici operativi e un formato di istruzioni prestabilito.
 
-    \item \textbf{Operandi sorgente}: Valori che possono essere memorizzati sia in dei registri interni che esterni (in base alla tipologia di operazione), su cui poi lavorano i codici operativi;
+    \item \textbf{Operandi sorgente}: Valori che possono essere memorizzati sia in dei registri interni che esterni (in base alla tipologia di operazione), su cui poi lavorano i codici operativi.
 
     \item \textbf{Operandi destinazione}: Registri o locazioni di memoria in cui si va ad inserire il dato prodotto dai codici operativi in base agli operandi sorgente ricevuti. Solitamente tale operando è indiretto poichè potrebbe, in una successiva operazione, diventare uno dei due operandi sorgente.
 \end{itemize}
 
-In generale un istruzione è una composizione di bit conservata in memoria, in cui una parte identifica il \textbf{codice operativo} da effettuare, mentre l'altra specifica gli operandi, che nel caso di registri interni vengono identificati con il corrispettivo indirizzo, mentre nel caso di indirizzi esterni viene specificata la locazione di memoria da cui prelevare il dato. Le tipologie di indirizzamento che posso essere utilizzate per gli operandi sono:
+In generale un'istruzione è una composizione di bit conservata in memoria, in cui una parte identifica il \textbf{codice operativo} da effettuare, mentre l'altra specifica gli operandi, che nel caso di registri interni vengono identificati con il corrispettivo indirizzo, mentre nel caso di indirizzi esterni viene specificata la locazione di memoria da cui prelevare il dato. Le tipologie di indirizzamento che posso essere utilizzate per gli operandi sono:
 \begin{itemize}
     \item \textbf{Diretto}: Gli operandi presenti in memoria vengono acceduti specificando l'indirizzo di memoria in maniera plane;
     \item \textbf{Indiretto}: Gli operandi in memoria vengono acceduti in base al valore puntato da un registro indirizzo;
@@ -65,13 +152,14 @@ In generale un istruzione è una composizione di bit conservata in memoria, in c
 Le istruzioni che vengono implementate per una particolare architettura vengono chiamate \textbf{ISA(Istruction Set Architecture)}, e che quindi possono essere o di tipo RISC o di tipo CISC in base alle scelte di progettazione:
 \begin{itemize}
     \item \textbf{CISC (Complex-Istruction-Set-Computer)}: Le istruzioni a disposizione del programmatore possono essere complesse, ovvero composte da più istruzioni elementari;
-    \item \textbf{RISC (Reduced-Istruction-Set-Computer)}: L'architettura del microprocessore permette l'utilizzo di un set più ridotto di istruzioni, semplici e lineari, tali istruzioni a differenza del paradigma CISC, possono essere più veloci, ma non ripagano in termini di complessità per l'effettuazione di determinate operazioni.
+    \item \textbf{RISC (Reduced-Istruction-Set-Computer)}: L'architettura del microprocessore permette l'utilizzo di un set più ridotto di istruzioni, semplici e lineari; tali istruzioni a differenza del paradigma CISC, possono essere più veloci, ma non ripagano in termini di complessità per l'effettuazione di determinate operazioni.
 \end{itemize}
 
-Nel nostro caso noi utilizzeremo il Motorola 68k a 16/32 bit, dove tali bit indicano la grandezza dei registri, e di conseguenza, dei bus di collegamento tra essi. L'architettura di tale microprocessore è CISC, ma noi utilizzeremo un set ridotto di tutte le funzioni messe a disposizione dall'M68k, in modo da poter avere anche la confidenza giusta per affrontare, in futuro, anche tipologie di architetture RISC.
+Nel nostro caso utilizzeremo il Motorola 68k a 16/32 bit, dove tali bit indicano la grandezza dei registri, e di conseguenza, dei bus di collegamento tra essi. L'architettura di tale microprocessore è CISC, ma noi utilizzeremo un set ridotto di tutte le funzioni messe a disposizione dall'M68k, in modo da poter avere anche la confidenza giusta per affrontare, in futuro, tipologie di architetture RISC.
 
 Per l'esecuzione di una particolare istruzione, il microprocessore deve, prima prelevarla dalla memoria. L'indirizzo dell' istruzione da prelevare è conservata dal Program Counter. Una volta prelevata l'istruzione dalla memoria tramite i registri MAR ed MBR, questa viene caricata nell'IR, che conserverà tale istruzione durante tutto il processo di decodifica ed esecuzione delle operazioni specificate.
 
+\vspace{1em}
 Le istruzioni possono classificate in base al codice operativo nel seguente modo:
 
 \begin{itemize}
@@ -79,13 +167,13 @@ Le istruzioni possono classificate in base al codice operativo nel seguente modo
 
     \item \textbf{Aritmetiche}: effettua delle operazioni aritmetiche sugli operandi in ingresso e le memorizza in un operando destinazione. Solitamente le funzioni appartenenti a tale classe lavorano su numeri interi;
 
-    \item \textbf{Logiche}: Operazioni che vengono effettuate sulle stringhe di bit degli operandi con una logica bit a bit. Effettuata l'operazione, il risultato viene inserito all'interno di un registro destinazione;
+    \item \textbf{Logiche}: operazioni che vengono effettuate sulle stringhe di bit degli operandi con una logica bit a bit. Effettuata l'operazione, il risultato viene inserito all'interno di un registro destinazione;
 
-    \item \textbf{Scorrimento}: operazioni effetuate sugli operandi in ingresso che restituiscono lo scorrimento verso (destra o sinistra) dell'operando e lo memorizzano in una data locazione;
+    \item \textbf{Scorrimento}: operazioni effetuate sugli operandi in ingresso che restituiscono lo scorrimento (verso destra o sinistra) dell'operando e lo memorizzano in una data locazione;
 
-    \item \textbf{Confronto}: gli operandi vengono confrontati ed in base alla tipologia di controllo che voglio effettuare vado a controllare i valori dell'SR che mi interessano;
+    \item \textbf{Confronto}: gli operandi vengono confrontati ed in base alla tipologia di controllo che si vuole effettuare si controllano i valori dell'SR d'interesse;
 
-    \item \textbf{Salto}: Le istruzioni di salto permettono di cambiare il PC e quindi di eseguire (o rieseguire) delle porzioni di codice a cui puntano. Le istruzioni di salto possono essere di tipo condizionato (Bcc) o non condizionato (JMP). Nel primo caso l'istruzione di salto viene effettuata solo se è vera una data condizione, mentre nel secondo caso il salto viene effettuato senza il controllo di alcuna condizione;
+    \item \textbf{Salto}: le istruzioni di salto permettono di cambiare il PC e quindi di eseguire, o rieseguire, delle porzioni di codice (a cui punta). Le istruzioni di salto possono essere di tipo \textbf{condizionato (BCC)} o \textbf{non condizionato (JMP)}. Nel primo caso l'istruzione di salto viene effettuata solo se è vera una data condizione, mentre nel secondo caso il salto viene effettuato senza il controllo di alcuna condizione;
 
-    \item \textbf{Input/Output}: Alcune CPU sono dotate di apposite istruzioni per trasferire i dati da e verso le periferiche.
+    \item \textbf{Input/Output}: alcune CPU sono dotate di apposite istruzioni per trasferire i dati da e verso le periferiche.
 \end{itemize}

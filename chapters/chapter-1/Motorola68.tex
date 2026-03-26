@@ -413,8 +413,8 @@ SUM_REGS:   ADD.L   D1, D0   * Somma D0 + D1, risultato in D0
 \end{lstlisting}
 
 \subsection{Valutazione degli accessi in memoria}
-Utilizzando i comandi precedentemente presentati, il processore può accedere in memoria principale. Gli accessi in memoria dipendono fortemente dalla tipologia di architettura che ho adottato. In generale gli accessi in memoria possono avvenire per 2 tipologie di operazioni: Accesso in memoria per le Istruzioni (PI) o accesso in memoria Per le Operazioni (PO).
-Veodiamo degli esempi per capire meglio di cosa si sta parlando:
+Utilizzando i comandi precedentemente presentati, il processore può accedere in memoria principale. Gli accessi in memoria dipendono fortemente dalla tipologia di architettura adottata. In generale gli accessi in memoria possono avvenire per 2 tipologie di operazioni: accesso in memoria Per le Istruzioni (PI) o accesso in memoria Per le Operazioni (PO). \\
+Vediamo degli esempi per capire meglio di cosa si sta parlando:
 \begin{table}[h]
     \centering
     \begin{tabular}{|c|c|c|}
@@ -435,16 +435,16 @@ Veodiamo degli esempi per capire meglio di cosa si sta parlando:
 Per contare gli accessi in memoria bisogna effettuare delle osservazioni in base alla parte che si sta analizzando.
 Per l'accesso \textbf{Per le Istruzioni (PI)} si ragiona sui seguenti accessi:
 \begin{itemize}
-    \item \textbf{Prelievo dell'istruzione}: Un operazione che non mancherà mai sarà sempre il prelievo dell'istruzione, che impone che il mio PI non potrà mai essere nullo;
-    \item \textbf{Operandi immediati}: se nel mio comando ho degli operandi immediati, allora dovrò accedere anche altre volte alla memoria per il prelievo di tale operando. I miei accessi, per questo caso, sono dettati dalla lunghezza dell'operando rispetto ai miei bus disponibili. Per esempio, se sono in un architettura a 16 bit devo prelevare un immegiato considerato una WORD, allora il numero di accessi aggiuntivi per prelevare l'immediato è uguale a 1. Mentre se stessi lavorango con le Long World (32 bit), allora il numero di accessi, a parità di architettura, sarà 2;
-    \item \textbf{Variabili}: se sto utilizzando delle variabili, che indicano delle locazioni di memoria dirette, allora dovrò fare un numero di accessi alla memoria che mi permette di prelevare gli indirizzi (tali indirizzi sono lunghi tutti 32 bit). Pertanto con un architettura a 16 bit dovrò considerare sempre 2 accessi per ogni variabile per prelevare tali indirizzi;
+    \item \textbf{Prelievo dell'istruzione}: Un operazione che non mancherà mai sarà sempre il prelievo dell'istruzione, che impone che il PI non potrà mai essere nullo;
+    \item \textbf{Operandi immediati}: se nel comando ci sono degli operandi immediati, allora bisognerà accedere anche altre volte alla memoria per il prelievo di tale operando. Gli accessi, per questo caso, sono dettati dalla lunghezza dell'operando rispetto ai miei bus disponibili: se lavoriamo con un'architettura a 16 bit, bisogna prelevare un dato pari a una Word, dunque il numero di accessi aggiuntivi per prelevare l'immediato è uguale a 1; se lavoriamo con un'architettyra a 32 bit (Long Word), allora il numero di accessi, a parità di architettura, sarà 2;
+    \item \textbf{Variabili}: se stiamo utilizzando delle variabili, che indicano delle locazioni di memoria dirette, allora saranno necessari un numero di accessi alla memoria che permette di prelevare gli indirizzi (tali indirizzi sono lunghi tutti 32 bit). Pertanto con un architettura a 16 bit si dovranno considerare sempre 2 accessi per ogni variabile per prelevare tali indirizzi;
 \end{itemize}
 
 Per l'accesso \textbf{Per gli Operandi (PO)}, i parametri risultano più o meno gli stessi, ad esclusione del prelievo istruzione e della variabile. Le operazioni che si contano per tale processo sono:
 \begin{itemize}
-    \item \textbf{Indirizzamento Indiretto}: quando vado ad effettuare dei riferimenti a dei registri della memoria con indirizzamento indiretto allora devo prevedere un numero di accessi per il prelievo dell'operando. Quindi bisogna conteggiare il numero di accessi per il prelievo dell'operando in base alla sua lunghezza. Nel caso di architettura a 16 bit si avranno: 1 accesso per prelevare delle word (16 bit) e 2 accessi pre prelevare le Long Word (32 bit)
+    \item \textbf{Indirizzamento Indiretto}: quando si effettuano dei riferimenti a registri della memoria con indirizzamento indiretto allora bisogna prevedere un numero di accessi per il prelievo dell'operando. Quindi bisogna conteggiare il numero di accessi per il prelievo dell'operando in base alla sua lunghezza. Nel caso di architettura a 16 bit si avranno: 1 accesso per prelevare delle word (16 bit) e 2 accessi per prelevare le Long Word (32 bit)
 
-    \item \textbf{Variabili}: Quando si utilizzano le variabili, oltre a prelevare gli indirizzi dalla "zona istruzioni" bisogna prelevare gli operando. La conta del numero di accessi per il prelievo degli operandi è uguale al caso di indirizzamento indiretto
+    \item \textbf{Variabili}: quando si utilizzano le variabili, oltre a prelevare gli indirizzi dalla "zona istruzioni" bisogna prelevare gli operandi. La conta del numero di accessi per il prelievo degli operandi è uguale al caso di indirizzamento indiretto.
 \end{itemize}
 
 Nel caso degli accessi PO, si è prevista la considerazione per singoli operandi. Quindi in base al numero di operandi presenti, la loro lunghezza prefissata, il loro modo di indirizzamento, si riesce a comprendere (cumulando le specifiche), il numero di accessi che bisogna effettuare in memoria ed il motivo di tali accessi.
