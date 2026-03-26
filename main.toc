@@ -1,0 +1,28 @@
+\babel@toc {italian}{}\relax 
+\babel@toc {italian}{}\relax 
+\contentsline {chapter}{\numberline {1}Richiami ed approfondimenti sui sistemi di elaborazione}{5}{chapter.1}%
+\contentsline {section}{\numberline {1.1}Richiami di calcolatori elettronici}{5}{section.1.1}%
+\contentsline {subsection}{\numberline {1.1.1}Architettura generale}{5}{subsection.1.1.1}%
+\contentsline {subsubsection}{\numberline {1.1.1.1}Memoria}{6}{subsubsection.1.1.1.1}%
+\contentsline {subsection}{\numberline {1.1.2}Istruzioni}{7}{subsection.1.1.2}%
+\contentsline {section}{\numberline {1.2}Motorola 68k}{9}{section.1.2}%
+\contentsline {subsection}{\numberline {1.2.1}Registri General Purpose}{9}{subsection.1.2.1}%
+\contentsline {subsection}{\numberline {1.2.2}Codici di Spostamento dati o indirizzi}{9}{subsection.1.2.2}%
+\contentsline {subsection}{\numberline {1.2.3}Codici Aritmetici}{12}{subsection.1.2.3}%
+\contentsline {subsubsection}{\numberline {1.2.3.1}Somma}{12}{subsubsection.1.2.3.1}%
+\contentsline {subsubsection}{\numberline {1.2.3.2}Sottrazione}{12}{subsubsection.1.2.3.2}%
+\contentsline {subsubsection}{\numberline {1.2.3.3}Moltiplicazione}{12}{subsubsection.1.2.3.3}%
+\contentsline {subsubsection}{\numberline {1.2.3.4}Divisione}{12}{subsubsection.1.2.3.4}%
+\contentsline {subsection}{\numberline {1.2.4}Codici di salto}{13}{subsection.1.2.4}%
+\contentsline {subsubsection}{\numberline {1.2.4.1}Salti non condizionati}{14}{subsubsection.1.2.4.1}%
+\contentsline {subsubsection}{\numberline {1.2.4.2}Salti condizionati}{14}{subsubsection.1.2.4.2}%
+\contentsline {subsubsection}{\numberline {1.2.4.3}Salti a subroutine}{15}{subsubsection.1.2.4.3}%
+\contentsline {subsection}{\numberline {1.2.5}Codici Logici}{15}{subsection.1.2.5}%
+\contentsline {subsection}{\numberline {1.2.6}Codici di Scorrimento}{16}{subsection.1.2.6}%
+\contentsline {subsection}{\numberline {1.2.7}Codici di Confronto}{16}{subsection.1.2.7}%
+\contentsline {subsection}{\numberline {1.2.8}Strutture sintattiche fondamentali}{17}{subsection.1.2.8}%
+\contentsline {subsubsection}{\numberline {1.2.8.1}if-then-else}{17}{subsubsection.1.2.8.1}%
+\contentsline {subsubsection}{\numberline {1.2.8.2}Ciclo FOR}{18}{subsubsection.1.2.8.2}%
+\contentsline {subsubsection}{\numberline {1.2.8.3}Ciclo While}{18}{subsubsection.1.2.8.3}%
+\contentsline {subsubsection}{\numberline {1.2.8.4}Chiamata a subroutine}{18}{subsubsection.1.2.8.4}%
+\contentsline {subsection}{\numberline {1.2.9}Valutazione degli accessi in memoria}{19}{subsection.1.2.9}%

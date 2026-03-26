@@ -1,0 +1,339 @@
+\newpage
+\section{Sistema Pipeline}
+Una architettura pipeline è una tipologia di soluzione che viene implementata internamente nei processori per permettere l'esecuzione parallela di più istruzioni.
+Per comprendere meglio cosa si intende per esecuzione parallela di più istruzioni, andiamo a considerare la strutturazione interna del flusso di esecuzione di una normale istruzione. L'esecuzione si divide nelle seguenti fasi (visualizzabili anche alla figura [\ref{img:pipe}]):
+\begin{itemize}
+    \item \textbf{Istruction Fetch (IF)}: Ovvero il prelievo dell'istruzione dalla memoria;
+    \item \textbf{Decode (DEC)}: Decodifica ed interpretazione dell'istruzione;
+    \item \textbf{Execute (EX)}: Esecuzione effettiva dell'istruzione;
+    \item \textbf{Memory write (MW)}: Effettuo il prelievo dei dati all'interno della memoria;
+    \item \textbf{Register write (RW)}: Inserisco i dati che mi interessano dai registri, in memoria. 
+\end{itemize}
+
+\begin{figure}[ht]
+    \centering
+    \includegraphics[width=.5\textwidth]{img/Pipeline.png}
+    \caption{Architettura classica pipeline (ordine di esecuzione fasi)}\label{img:pipe}
+\end{figure}
+
+Definito il flusso di esecuzione di un' istruzione, l'architettura pipeline cerca di eseguire le fasi di un' istruzione in maniera del tutto separata, in modo da poter eseguire più fasi di istruzioni differenti, aumentando il throughput di 5 volte rispetto alla classica architettura sequenziale di Von Neumann. Per capire meglio questo concetto facciamo un esempio:
+Devo eseguire un programma che ha 5 istruzioni, allora parto con l'esecuzione della prima fase, che preleverà l'istruzione i1, una volta prelevata, l'istruzione i1 passa alla fase di decode, mente, allo stesso istante, viene caricata l'istruzione i2 (quindi viene effettuata la Istruction Fetch dell'istruzione successiva mentre viene decodificata la precedente). Se eseguiamo tale procedura per tutte le fasi noteremo che ad ogni impulso di clock (a regime), il processore darà un risultato, quindi non ci sarà bisogno di eseguire tutte le istruzioni una per volta, poichè la suddivisione delle fasi ne permette un' esecuzione "parallela" (o meglio dire pipeline).
+
+Per fare in modo di isolare l'esecuzione delle varie fasi, tra i vari blocchetti saranno presenti dei registri, che permettono di conservare lo stato su cui una determinata fase sta lavorando (come le architetture pipeline in elettronica [\ref{img:pipe-reg}]). 
+
+\begin{figure}[ht]
+    \centering
+    \includegraphics[width=.5\textwidth]{img/Pipe-reg.png}
+    \caption{Architettura classica pipeline con registri}\label{img:pipe-reg}
+\end{figure}
+
+Esistono tuttavia dei limiti dell'architettura pipeline la cui risoluzione verrà discussa (almeno per quelli che ci riguardano) nei prossimi paragrafi:
+
+\begin{itemize}
+    \item \textbf{Vincolo di tempo}: Le fasi presentate operano in pipe, quindi funzionano bene se tutte le unità funzionali impiegano un tempo più o meno costante. Se così non fosse, l'intero processore sarà rallentato dall'unità funzionale più lenta. La condizione di tempo di risposta costante è garantita solo se le istruzioni sono particolarmente semplici (condizione tipica dei sistemi RISC);
+    \item \textbf{Vincolo tecnologico}: Tutte le unità funzionali sono pilotate contemporaneamente dallo stesso clock. Il problema tecnologico è che il clock può essere schematizzato elettronicamente come un circuito induttivo/capacitivo, e di conseguenza le ultime unità a percepire il segnale di clock, se la frequenza del treno di impulsi è troppo elevata, troppo \textit{filtrato} (a causa del filtro capacitivo) o troppo rumoroso (a causa dell'effetto induttivo). Questo fenomeno prende il nome di Skew del segnale di clock, e dunque è opportuno adottare delle misure di ridondanza e controllo correttezza a monte di ogni collegamento unità funzionale-clock;
+    \item \textbf{Problema delle istruzioni di salto}: Quando si incontra un'istruzione di salto, bisogna eseguirla completamente (fine fase EX), prima di sapere se il salto deve essere effettuato o meno e prima di conoscere l'indirizzo della prossima istruzione da prelevare. La filosofia generale è quella di non fermare la pipe, e quindi continuare a caricare istruzioni in modo sequenziale, e all'occorrenza eliminarle dalla pipe (\textit{branch penalty}) (\ref{par:MIPS_gestione_salti});
+    \item \textbf{Problema del conflitto sui dati}: Spesso accade che due istruzioni consecutive cercano di leggere e scrivere contemporaneamente lo stesso registro e ciò potrebbe causare gravi errori. Nei processori CISC i conflitti sui dati sono più probabili, siccome quest’ultimi tendono a garantire tutti i modi di indirizzamento per tutte le istruzioni. Il conflitto sui dati è confinato alle ultime tre fasi: EX, MEM e WB;
+    \item \textbf{Problema della gestione delle interruzioni}: In un sistema pipeline è più complesso gesite sia le interruzioni esterne che garantire il corretto ordine di esecuzione delle interruzioni interne;
+    \item \textbf{Problema dei conflitti per l'accesso in memoria}: Più fasi possono tentare di accedere contemporaneamente alla memoria, per eseguire operazioni di lettura delle istruzioni o scrittura sui dati. 
+\end{itemize}
+
+Un'architettura di questo tipo, però, richiede una serie di ipotesi, ovvero:
+\begin{itemize}
+    \item Divisione di memoria dati e memoria istruzioni (altrimenti dovrei gestire anche dei conflitti tra l'istruction fetch e la register/memory write);
+    \item Le memorie devono garantire degli accessi molto veloci: ad ogni colpo di clock vengono effettuate 5 fasi e potenzialmente scritto un risultato.
+    \item Le operazioni artimetico-logiche devono essere effettuate prevalentemente tra i registri interni del processore, condizione che caratterizza fortemente i processori RISC;
+    \item Le istruzioni devono avere tutte lunghezza fissa;
+\end{itemize}
+
+Guardando le ipotesi possiamo capire che alcune tipologie di operazioni, che solitamente effettuevamo sul processore motorola, ora dovranno essere scompattate in varie operazioni. Un esempio classico è il comando \lstinline|ADD VAR,D1|, che utilizzava l'indirizzamento diretto per il prelievo dell'operando dalla memoria. In questo caso, però, l'indirizzamento diretto non è possibile, poichè si andrebbe ad invalidare un'ipotesi, ovvero, la lunghezza fissa dell'istruzione (che dovrebbe poi contenere l'indirizzo di memoria). Pertanto non sono previsti tutti i modi di indirizzamento.
+
+Per comprendere meglio la problematica, consideriamo di avere un prelievo dalla memoria con un'architettura a 16-bit, ma con il memory address ed il memory buffer a 32-bit. Pertanto il seguente comando non sarebbe possibile: \lstinline|MOVE VAR,D0|; poichè richiederebbe il prelievo dell'indirizzo di memoria da 32-bit dalla memoria, ma per effettuare tale operazione, avendo solo 16 bit, avrei bisogno di due istruzioni che caricano, una i primi 16-bit e l'altra i restanti 16. Tale suddivisione, però non viene fatta dal programmatore, ma dal compilatore. Ci sono varie istruzioni che sono come la MOVE, tali istruzioni sono dette pseudo-istruzioni, poichè il compilatore andrà a suddividerle in più operazioni differenti al fine di raggiungere il risultato desiderato.
+
+Questa cosa ci permette di capire, a questo punto, la suddivisione tra architettura di tipo CISC e architetture di tipo RISC. Le architetture di tipo CISC permettono l'esecuzione di istruzioni che sono più articolate, ma a costo di una complessità architetturale maggiore, mentre nelle architetture RISC, data la semplicità dell'architettura, le tipologie di operazioni che si possono effettuare sono ridotte ma più veloci.
+
+\subsection{Modelli di sistemi pipeline}
+Il sistema pipeline, dato il suo sistema di funzionamento, può introdurre varie tipologie di problematiche. Negli anni si sono sviluppate varie tipologie di soluzioni differenti.
+Le principali architetture con cui si va a contatto al giorno d'oggi sono:
+\begin{itemize}
+    \item \textbf{MIPS}: Tipologia di ISA sviluppata da Patterson che poi ha venduto, per cui ora la sua implemetazione è proprietaria;
+    \item \textbf{RISC-V}: Tipologia di ISA molto simile al MIPS, ma open-source;
+    \item \textbf{ARM}: Tipologia di ISA proprietaria, utilizzatissima in svariati amiti (particolarmente in quello industriale), la cui implementazione è proprietaria;
+\end{itemize}
+
+Nel caso particolare di questo corso, andremo a vedere il funzionamento del RISC-V facendo riferimento sempre al MIPS, per cui saranno queste le due tipologie di architetture che si andranno ad approfondire.
+
+Le principali problematiche che bisogna affrontare all'interno di un architettura pipeline sono le seguenti:
+\begin{itemize}
+    \item \textbf{Interruzioni}: Quando bisogna gestire un' interruzione la gestione dell'architettura pipe si complica, poichè bisogna capire chi ha interrotto e bisogna salvare lo stato di tutte le istruzioni che stanno eseguendo, che risulta una cosa molto onerosa e complicata;
+    \item \textbf{Concorrenza sui registi}: Se due istruzioni, devono utilizzare un'informazione presente nello stesso registro ad esempio: R1 = R2+R3; R0=R1+R4;  Notiamo che per eseguire la seconda istruzione vi è bisogno del completamento della prima, ma il risultato effettivo viene scritto solo alla fine del ciclo, per cui si potrebbe incorrere in vari errori;
+    \item \textbf{Salti}: Quando devo effettuare un salto, se considero il caso condizionato, non so a quale ramo andrò a saltare, è quindi più complicato capire quale sarà l'istruzione successiva da eseguire;
+    \item \textbf{Gestione delle pipe multiple}: ho molteplici pipe di esecuzione, che quindi richiede una loro gestione per prevenire eventuali conflitti;
+\end{itemize}
+
+Una delle problematiche che maggiormente incide è quella riguardante il salto, poichè, dato che non conosco quale sia l'istruzione successiva, vado a bloccare la pipe appena noto che ho un'istruzione di salto, ed appena è verificata la condizione, vado a prelevare tale istruzione dalla memoria. Però questa soluzione risulta molto inefficiente, poichè introduce dei periodi in cui la pipe rimane in stallo. Difatti, una soluzione che è stata trovata è quella della branch prediction, per cui vado a processare le istruzioni successive, cercando di prevedere quale sarà il branch da eseguire, solo nel caso in cui mi accorgo che sto sbagliando vado ad effettuare il blocco della pipe, altrimenti continuo con la normale esecuzione del programma. 
+
+\subsection{Registri Intermedi}
+I registri che sono posti tra una fase e l'altra della pipeline sono molto più complessi di quel che si crede. Essi non contengono solo dati informativi (operandi e risultati), ma contengono anche: traccia dell'operazione da effetture, destinazione del risultato ecc. 
+L'architettura e le componenti di cui si è parlato sopra, quindi, sono solo una parte di quello che è effettivamente stato realizzato sull'hardware del dispositivo.
+La schematizzazione che abbiamo fatto ci permette di capire bene il funzionamento di un sistema pipeline senza entrare troppo nei dettagli della sua implementazione hardware.
+
+\subsection{Gestione dei Salti} \label{par:MIPS_gestione_salti}
+L'architettura pipeline ha una criticità di cui abbiamo già attentamente discusso in precedenza, i salti. 
+Quando sopraggiunge un istruzione di salto, riusciamo a captare che è così solo nella fase di esecuzione dell'istruzione, mentre la pipe ha continuato a caricare le istruzioni in modo sequenziale, che si troveranno rispettivamente nella fase di IF e ID e non avranno quindi ancora modificato lo stato del processore e della memoria. Nel caso in cui il salto non deve essere eseguito, allora la pipe continuerà a funzionare normalmente, mentre se il salto deve essere eseguito, le istruzioni caricate dovranno essere eliminate dalla pipe (\textit{pipe flush}) e dovrà essere caricata l'istruzione a cui punta il salto e le successive. Il ritardo che segue quest'ultimo caso è detto \textit{branch penalty}. L'obiettivo è quello di confinare la gestione dei salti nelle fasi IF e ID, perchè in quelle fasi le istruzioni non hanno ancora modificato lo stato del processore e della memoria, e quindi la rete di controllo hardware deve riguardare solo queste due fasi.
+In generale, il problema è risolvibile fondamentalmente mediante due approcci: l'approccio conservativo e l'approccio ottimistico (\textit{branch prediction}).
+Nel caso dell'approccio conservativo, quando il processore interpreta durante la fase ID un'istruzione come istruzione di salto, ferma la pipe e disabilita la propagazione dell'istruzione che si trova erroneamente nella fase IF, determina l'istruzione a cui saltare in fase EX e la preleva. Si torna insomma al modello sequenziale di Von Neumann. Il conto è salato se consideriamo che le istruzioni di salto costituiscono il 25\% di un programma, e infatti ne consegue un notevole spreco delle risorse di parallelismo fornite dalla pipe. Questo approccio è \textit{leggermente} migliorabile attraverso l'hardware, anticipando la decisione inerente al salto alla fase di ID, in base alla condizione di salto. Ad esempio l'istruzione \lstinline|JNZ <LABEL>| controlla se il flag Z del SR è alto, e in tal caso non occorre saltare e quindi l'istruzione che si è prelevata nel frattempo è giusta. Molti ritardi possono essere  evitati dal programmatore o dal compilatore: il programmatore può contribuire al buon funzionamento del sistema, scrivendo le istruzioni in un ordine tale da minimizzare le probabilità di stallo della pipe. Nel caso di un costrutto if-then-else, ad esempio, conviene inserire nel ramo then l'alternativa più probabile. Il compilatore, da parte sua, può operare vari accorgimenti; ad esempio, siccome un ciclo for è sempre tradotto in un if-then-else, esso deve inserire l'alternativa più probabile nel ramo then.
+In fase di compilazione è possibile evitare l'approccio conservativo. Se immediatamente prima del salto c'è un'istruzione con operandi da cui non dipende l'esito della scelta di saltare o meno, è possibile in fase di compilazione inserire l'istruzione indipendente dopo il branch, in modo da sfruttare lo slot di tempo in cui l'istruzione viene caricata ed entra nella pipe, e quindi non c'è bisogno di pipe flush. Qualora non sia possibile invertire una istruzione if con quella che la precede, il compilatore potrebbe decidere di mettere subito dopo la if una \textbf{nop}, istruzione che non ha alcun effetto e quindi non è mai errato inserirla nella pipe. In questo modo si può operare senza considerare alcun tipo di approccio. Possiamo aggiungere che se stiamo considerando un'istruzione di salto in un processore CISC con una condizione di salto elaborata, allora il numero di nop che bisogna inserire a seguito dell'istruzione di salto risulta essere superiore a 1, in quanto ricordiamo che la pipe per i CISC è più lunga e la valutazione della condizione coinvolge più fasi oltre le prime due, di caricamento e decodifica.
+Una soluzione meno conservativa a quella appena presentata è di utilizzare la \textbf{branch-prediction} (approccio ottimistico).
+
+% Per Agostino: Ho cambiato interamente questa sezione in accordo agli appunti di de Benedictis, molto più sensati e chiari di quanto farfugliato a lezione.
+
+
+% e quindi, se dovessimo aggiustare il PC seguendo tutta la pipe, dovremmo aspettare la fase di write back. L'obiettivo è quello di confinare la gestione dei salti nelle fasi IF e ID, perchè in quelle fasi le istruzioni non hanno ancora modificato lo stato del processore e della memoria, e quindi la rete di controllo hardware deve riguardare solo queste due fasi. Per evitare tale situazione di inefficienza, andiamo a retroazionare la fase di esecuzione con la fase di Istruction Fetch. Tale retroazione permette di capire quando e dove poi si andrà a saltare. Ciò però deve prevedere il sacrificio o l'introduzione di un istruzione "vittima", tale istruzione sarà eseguita indipendentemente a dove si andrà a saltare. Tale istruzione è la no-operation (NOP), che viene inserita subito dopo la JMP per evitare la perdita di eventuali istruzioni utili.
+% Tale soluzione è molto buona quando lavoro con il MIPS, poichè questo è caratterizzato dalla sua particolare pipe molto corta (e quindi molto RISC), ma nei processori più moderni, posso avere delle pipe molto più profonde ed articolate. 
+
+\paragraph{Branch prediction}
+La branch prediction è una tecnica che cerca di prevedere a quale ramo un istruzione di salto condizionato possa saltare. Tale tecnica valuta le prestazioni in base a quanto si possa "perdere" in termini di efficienza (ricaricare il branch corretto rispetto a quello predetto).
+Per capire bene questa cosa andiamo a considerare il seguente pseudocodice:
+\begin{lstlisting}[language=C]
+for (int i = 0; i < N; i++){
+    for (int j = 0; j < N; j++){
+        operazioni
+    }
+}
+\end{lstlisting}
+
+Tali for prevedono un controllo iniziale sulla variabile. Vedendo come sono strutturati tale controllo prevede l'esecuzione del ramo else una sola volta (guardando il for interno) ogni N passi.
+I modi pre prevedere il branch possono essere vari, e possono essere descritti mediante degli appositi automi a stati finiti. Un primo approccio molto basilare è quello di andare a cambiare il branch da caricare successivamente ad ogni errore di decisione e quindi eseguire le operazioni descritte dall'automa [\ref{img:automa-semplice}].
+
+\begin{figure}[ht]
+    \centering
+    \includegraphics[width=.5\textwidth]{img/automa-semplice.png}
+    \caption{Automa della branch prediction base}\label{img:automa-semplice}
+\end{figure}
+
+Tale soluzione, però, guardando al nostro caso, non è proprio ottimale, poichè per quel singolo fail che avviene ad ogni N interazioni dovrò assorbirmi 2 fault. Per evitare tale condizione, e quindi rendere la persistenza più forte, vado a costruire un automa a 4 stati che mi permette di rendere la condizione di "cambio del branch" più solida, poichè solo in caso di due fault successivi (fault = errore nel riconoscere il branch giusto), allora cambio il mio branch effettivo. L'automa che meglio spiega tale principio è quello visualizzabille all'immagine [\ref{img:automa-complesso}]
+
+\begin{figure}[ht]
+    \centering
+    \includegraphics[width=.5\textwidth]{img/automa-complesso.png}
+    \caption{Automa della branch prediction avanzato}\label{img:automa-complesso}
+\end{figure}
+
+Per implementare la predizione a livello hardware, il processore utilizza una \textbf{tabella di predizione} dei salti. Una possibile struttura è la seguente.
+\begin{itemize}
+    \item Indirizzo dell'istruzione di salto.
+    \item Indirizzo di destinazione (dove saltare).
+    \item 2 Bit per codificare lo stato dell'automa.
+\end{itemize}
+
+La tabella viene aggiornata in parallelo durante la fase di Execute (EX), ovvero nel momento in cui il processore verifica se la predizione è corretta. Se c'è stato un errore, si aggiorna lo stato dell'automa (e la corrispondente voce nella tabella). Tale struttura è memorizzata in un apposita area di memoria, detta \textbf{Branch History Table} (BHT).
+\\
+\\
+Cerchiamo di capire come sia possibile realizzare una memoria dalle caratteristiche descritte in precedenza. Osserviamo innanzitutto che un tale funzionamento non può essere ottenuto da un classico schema di MUX e DEMUX, in quanto l'ingresso della memoria sarà una chiave (indirizzo 100) e l'uscita sarà un valore (indirizzo 104 o 104). Per cui, la memoria si compone di una serie di chiavi, a ognuna delle quali viene associata un'informazione. \MakeUppercase{è} inoltre presente un comparatore legato a ciascuna chiave, che restituisce un valore alto se questa coincide con il valore della chiave fornito in ingresso. Tutte le informazioni memorizzate sono collegate a un MUX, che viene pilotato dalle uscite dei comparatori. Una tale tipologia di memoria è detta \textbf{associativa} [\ref{fig:mem_associativa}], e differisce dalle classiche memorie indirizzabili quali, RAM o hard disk.
+\begin{figure}[ht]
+    \centering
+    \includegraphics[width=0.5\linewidth]{img/mem_associativa.png}
+    \caption{Architettura di una memoria associativa.}
+    \label{fig:mem_associativa}
+\end{figure}
+
+\subsection{Gestione dei conflitti sui dati}
+Se due istruzioni consecutive tentano di accedere contemporaneamente ad uno stesso registro/locazione di memoria, come già accennato in precedenza, si generano \textbf{conflitti sui dati}, classificabili in \textit{Read after Write} (R/W) e \textit{Write after Read} (W/R). Le operazioni R/R e W/W, invece, non causano problemi: la prima perché la lettura non modifica lo stato dei registri/memoria, la seconda perché conta solo la scrittura operata dalla seconda istruzione. Consideriamo un esempio di conflitto R/W.
+\begin{lstlisting}
+i:   R2 = R1 + R3  
+i+1: R4 = R2 + R5
+\end{lstlisting}
+La seconda istruzione (i+1) vuole leggere R2 prima che la prima (i) abbia terminato di scriverlo. Questo genererebbe uno stallo, perché la pipeline dovrebbe aspettare. Il problema viene risolto utilizzando la tecnica dell'anticipo degli operandi, anche nota come \textbf{Operand Fowarding}: il dato appena calcolato dall’ALU (fase EX della i) viene “girato” direttamente alla EX della i+1 senza aspettare che venga scritto in R2 (fase WB). Dunque, la soluzione consiste nel creare un canale hardware che renda i risultati disponibili appena l’ALU li calcola. Notiamo come questa sia realizzabile solo se si opera su registri del processore ed ogni fase impiega un solo ciclo di clock (tipico dei processori RISC).  
+\\
+\\
+Cerchiamo di complicare leggermente il conflitto.
+\begin{lstlisting}
+i:   R1 = MEMA          * carico da memoria in R1.
+i+1: R2 = R1 + R3       * uso R1 subito dopo.
+\end{lstlisting}
+L'accesso alla memoria è molto più lento di quello ai registri, dunque, anche con la tecnica di forwarding vista in precedenza non possiamo prendere un dato dalla memoria prima che sia pronto. Se i sta ancora caricando da memoria (fase MEM), la i+1 che vuole usare il contenuto di R1 non può partire se R1 non è ancora stato aggiornato. Soprattutto se il dato non è in cache, la fase di MEM può impiegare anche decine di cicli.
+\\
+La linea guida generale seguita dai processori con Pipeline è che la pipe non debba mai essere interrotta: lo scopo è mantenere un flusso continuo di istruzioni attraverso le varie fasi. Utilizzare la proprietà associativa e commutativa, quando possibile, permette di modificare l'ordine delle istruzioni non bloccando la pipe. La proprietà associativa consente di associare in un solo gruppo le istruzioni indipendenti tra loro; la commutativa, invece, permette di individuare i gruppi di istruzioni invertibili, ovvero la cui inversione non causa errori di esecuzione. Tutto ciò viene implementato in hardware prima della fase di Execute (EX). Se tali proprietà non dovessero essere soddisfatte, la pipe andrebbe in stallo.
+\\
+\\
+In tal caso, è possibile adottare un'altra tecnica nota come \textbf{Internal Fowarding}, che consiste nell'ibernare temporaneamente le istruzioni bloccate (ad esempio in attesa di dati dalla memoria), sospendendo la loro esecuzione. Nel frattempo, la pipeline può continuare con le istruzioni successive. Quando l'operazione bloccata è pronta per essere completata, viene ripresa nel corretto ordine. In questa soluzione quindi, le istruzioni vengono prelevate in sequenza ma non eseguite necessariamente in sequenza. Notiamo come questo comportamento viola il modello sequenziale di Von Neumann, in cui le istruzioni dovrebbero essere eseguite nell'ordine in cui sono scritte. Un problema importante che può emergere in questo contesto è la condivisione di registri tra istruzioni diverse. Cosa succede se più istruzioni accedono allo stesso registro? Se una lo modifica mentre un'altra lo sta ancora usando, si crea un conflitto sui dati, chiamato anche \textbf{Hazard}.  Una soluzione possibile è quella di creare più copie del registro coinvolto, in modo da tenere traccia dei diversi stati dello stesso dato nel tempo. Questo può essere implementato tramite una forma di indirizzamento indiretto: ogni registro ha uno o più puntatori che indicano sezioni di memoria dedicate a contenere le vecchie versioni del registro stesso [\ref{fig:reg_copia}]. Per funzionare correttamente, è necessario che il numero di registri fisici (cioè le copie disponibili) sia maggiore rispetto ai registri logici visibili al programmatore, in modo da evitare conflitti durante l'esecuzione in parallelo delle istruzioni.
+\begin{figure}[ht]
+    \centering
+    \includegraphics[width=0.4\linewidth]{img/registri_copia1.png}
+    \caption{Struttura dei registri copia con indirizzamento indiretto.}
+    \label{fig:reg_copia}
+\end{figure}
+Per implementare questa tecnica si utilizza un'area di memoria interna al processore detta \textbf{tabella di ibernazione}, che tiene nota di tutte quelle istruzioni già decodificate, ovvero di cui si ha già la chiara conoscenza degli operandi e delle operazioni che queste richiedono [\ref{fig:tabella_ibern}]. 
+\begin{figure}[ht]
+    \centering
+    \includegraphics[width=0.5\linewidth]{img/tabella_ibernazione.png}
+    \caption{Tabella di ibernazione.}
+    \label{fig:tabella_ibern}
+\end{figure}
+Se per un determinato tipo, è necessario ibernare più istruzioni di quanto la tabella permette, il blocco della pipe diventa inevitabile. Notiamo anche come sia possibile ibernare soltanto un'operazione di LOAD e STORE alla volta, questo perché  finché un'operazione in memoria non è conclusa non se ne possono attivare altre dello stesso tipo. Gli altri registri della tabella potrebbero essere aumentati per una maggiore efficienza, ma di conseguenza crescerebbe anche il costo implementativo della soluzione. I registri del processore, che in questo contesto prendono il nome di \textbf{Forwarding Register}, non contengono i valori effettivi, ma dei puntatori ai registri che contengono i veri valori, detti \textbf{Operand Register} e situati in una memoria esterna. Ad esempio, se il registro R1 contiene il valore 3, ciò significa che il suo valore effettivo è memorizzato nel registro OPR(3). I registri operando contengono, oltre al valore attuale dei registri del processore, anche i valori che essi hanno assunto nel corso dell'elaborazione, ovvero la loro ‘storia passata’ [\ref{fig:for-op-reg}]. Inoltre, vengono riportate due informazioni aggiuntive:
+\begin{enumerate}
+    \item Il numero di operazioni sospese che dipendono da esso.
+    \item Un bit di validità, per indicare se il valore è valido (0) o meno (1). 
+\end{enumerate}
+\begin{figure}[ht]
+    \centering
+    \includegraphics[width=0.4\linewidth]{img/registri_if.png}
+    \caption{Struttura dei registri.}
+    \label{fig:for-op-reg}
+\end{figure}
+Non ci resta che cercare di capire come una tale struttura possa essere utilizzata per evitare lo stallo della pipe in caso di conflitti sui dati. Per farlo, prendiamo come esempio il seguente codice.
+\begin{lstlisting}
+i:   R1 = MEMA
+i+1: R2 = R1 + R3
+i+2: R4 = R2 + R5
+i+3: R2 = R6 + R7
+i+4: R4 = R2 + R4
+\end{lstlisting}
+Per prima cosa, l'istruzione \textit{i} tenta di caricare un dato dalla memoria al registro R1. Supponendo che il dato non sia presente in cache (cache miss), questo non è subito disponibile e l'istruzione non può essere completata. Di conseguenza, viene ibernata: viene memorizzato che il valore destinato a R1 sarà disponibile in futuro e si aggiorna il registro OPR(1), che funge da puntatore al valore effettivo, indicando dove il dato arriverà. Subito dopo, l'istruzione \textit{i+1} ha bisogno del valore contenuto in R1, che però ancora non è stato caricato. Anche questa istruzione viene quindi ibernata e si aggiorna il contatore di operazioni sospese su R2. L’istruzione \textit{i+2}, a sua volta, dipende dal valore di R2, che è stato aggiornato da una istruzione ancora in attesa. Per questo motivo anche \textit{i+2} viene ibernata, e si aggiorna nuovamente il numero di operazioni sospese su R2, che diventa 2. Arrivati a \textit{i+3}, questa istruzione può essere eseguita subito perché i registri R6 e R7, da cui dipende, non sono coinvolti in operazioni ibernate. Viene così calcolato un nuovo valore per R2 e si aggiorna il puntatore OPR(2) con un nuovo riferimento. Nel frattempo, anche se si aggiorna R2, le informazioni precedenti relative alle istruzioni ancora ibernate non vengono perse, perché il sistema gestisce separatamente i valori e i riferimenti alle istruzioni in sospeso. Quando il dato atteso da MEMA per l'istruzione \textit{i} finalmente arriva, questa può essere completata. Di conseguenza si sbloccano le istruzioni \textit{i+1} e \textit{i+2} che dipendevano da quel dato, e possono essere eseguite una dopo l'altra. A ogni esecuzione, si aggiornano i puntatori e i contatori associati: quando il numero di operazioni sospese su un registro scende a zero, il valore è considerato valido e il bit di “occupato” si azzera, rendendo il registro di nuovo disponibile per istruzioni future.
+\\
+\\
+ Le due fasi della pipeline cruciali per gestire le tabelle di ibernazione e i registri sono ID e EX. Durante la fase di decodifica il processore capisce cosa deve fare l'istruzione, se non può essere eseguita viene ibernata e aggiunta alla tabella di ibernazione. \MakeUppercase{è} in questa fase che dunque si aggiornano i registri del processore, cambiando i loro puntatori. Durante la fase di esecuzione le istruzioni vengono effettivamente eseguite, i valori reali negli Operand Register (OPR) vengono calcolati, scritti, o rimossi se non più necessari. Per cui, è durante questa fase che si aggiornano i registri operandi. Un'altra cosa interessante da notare è il comportamento del sistema una volta che i dati in attesa dalla memoria diventano disponibili. In tal caso, è possibile iniziare a sbloccare le istruzioni precedentemente congelate, rendendole pronte ad essere eseguite. Questo però, genera uno stallo temporaneo della pipe. Fortunatamente, il blocco riguarda solo le prime fasi della pipeline (tipicamente IF e ID) e non le fasi critiche come l'esecuzione (EX) o la scrittura (WB). Questo è importante, poiché così non vengono alterati i registri e lo stato interno del processore. 
+ 
+\subsection{Gestione delle interruzioni}
+Con l'introduzione del sistema a pipeline e del meccanismo dell'internal forwarding, che altera la sequenzialità delle istruzioni eseguite dal processore, il problema della \textbf{gestione delle interruzioni} diventa sempre più complesso. Infatti, può accadere che le istruzioni si completino in ordine diverso da quello di esecuzione. Se un'istruzione causa un'eccezione prima che le precedenti siano terminate, si parla di \textbf{interruzione non precisa}.
+Per evitarlo, si mira a una \textbf{gestione precisa}, dove il sistema blocca la pipeline, completa le istruzioni precedenti e impedisce l'avvio di quelle successive, mantenendo il comportamento sequenziale previsto dal modello di Von Neumann.
+\\
+\\
+Ricordiamo che le interruzioni sono dovute a diversi fenomeni, ma che in generale si classificano in interne ed esterne.
+Le \textbf{interruzioni esterne} sono le più facili da gestire. Supponiamo di avere una pipe nella quale, in un certo momento, sono state attivate un certo numero di istruzioni. In base al modello classico di Von Neumann, occorre terminare l'operazione in corso nella pipe (e le eventuali operazioni ibernate) e salvare lo stato del processore prima di servire una interruzione. Seguendo tale modello, quindi, quando giunge un'interruzione da parte di una periferica di I/O, la ISR sarà inserita nella pipe come una qualsiasi altra istruzione. Se il sistema delle interruzioni è vettorizzato, è la stessa periferica a identificarsi mediante un numero, che il 
+processore somma ad un indirizzo base, per calcolare l'indirizzo iniziale della ISR. Nel caso non vettorizzato, occorre interrogare i registri di stato di tutte le periferiche per scoprire quale ha causato l’interruzione (polling). Tale concetto si estende al caso Pipelined, salvo che le operazioni
+in corso sono più di una.
+\\
+\\
+Più critico è il caso delle \textbf{interruzioni interne}. Poiché si tratta di interruzioni che hanno effetto 
+all'interno della pipe e non all'esterno, tali eventi possono dare luogo ad un comportamento del programma diverso da quello di Von Neumann. Ad esempio, potrebbe accadere che in una sequenza (i,i+1), l'istruzione i+1 generi un'eccezione prima che l'istruzione i abbia il tempo di essere eseguita. Per garantire che il 
+comportamento del sistema, in queste condizioni, sia quello di Von Neumann, occorre complicare in maniera notevole l'hardware. Esempi di soluzioni che possono essere adottate sono:
+\begin{itemize}
+    \item \textbf{Rinuncia alle interruzioni precise}: Si accetta l'esecuzione non sequenziale, dando priorità all'interruzione che arriva per prima. Così facendo, si demanda al software la decisione sul capire se ci sono eventuali altre istruzioni in pipe che possono interrompere. È poco efficiente, ma accettabile dato che le eccezioni sono rare.
+    \item \textbf{Ricostruzione delle interruzioni precise}: Le istruzioni possono essere \textit{out-of-order}, ma si impiegano due possibili approcci:
+    \begin{enumerate}
+        \item Nell'approccio \textit{conservativo}, ogni istruzione prosegue solo se è sicuro che non causerà eccezioni. Questo riduce il parallelismo, ma garantisce precisione.
+        \item In quello \textit{ottimistico}, il processore prosegue comunque e, in caso di errore, effettua un \textbf{roll-back} (ripristino dello stato precedente). Questo richiede però di salvare lo stato del sistema.
+    \end{enumerate}
+\end{itemize}
+\begin{enumerate}
+    \item La tecnica del \textbf{Check Point} consiste nel salvare periodicamente lo stato del processore (inclusi registri e Program Counter) in una memoria dedicata. In caso di eccezione o interruzione, si può ripristinare l’ultimo stato salvato e riprendere l’esecuzione in modo sequenziale da lì. Un aspetto critico è la gestione della memoria, poiché alcune istruzioni eseguite dopo il checkpoint potrebbero aver alterato dati che non avrebbero dovuto essere modificati. Questo richiede eventualmente meccanismi aggiuntivi per annullare anche le scritture in memoria. Inoltre, è importante scegliere con attenzione quando effettuare i salvataggi: se troppo frequenti, possono introdurre un sovraccarico in termini di tempo e spazio; se troppo distanti, in caso di eccezione si deve ripetere un ampio numero di istruzioni.
+    \item La tecnica dell’\textbf{History Buffer} prevede l’uso di un buffer hardware che conserva, per ogni istruzione eseguita, i valori originali dei registri o delle locazioni di memoria che essa modifica. Questo permette di annullare gli effetti di istruzioni che non dovrebbero essere state eseguite, tramite un'operazione di \textit{undo}. Le informazioni salvate nel buffer restano disponibili fino a quando non è certo che tutte le istruzioni precedenti sono state eseguite correttamente (cioè non hanno generato eccezioni). In caso di eccezione, il sistema può ripristinare lo stato precedente annullando, in ordine inverso, tutte le modifiche fatte dalle istruzioni speculative o successive a quella che ha causato l’errore. Il buffer deve essere sufficientemente grande da contenere le modifiche delle istruzioni speculative che si trovano in esecuzione simultanea nella pipeline. Questa tecnica ha il vantaggio di non introdurre overhead in assenza di errori, poiché la memorizzazione dello stato precedente avviene in parallelo all’esecuzione normale del processore. È per questo motivo che la tecnica dell’History Buffer viene implementata completamente in hardware.
+\end{enumerate}
+Notiamo come in entrambe le tecniche, a seguito di eventuali eccezioni, l'esecuzione si riprende \textit{sequenzialmente} dal punto di interruzione. Con ciò si intende che l’esecuzione deve proseguire in ordine corretto delle istruzioni del programma, come se l’errore non fosse mai avvenuto.
+
+In un approccio basato sul roll-back è fondamentale essere conservativi sulla scrittura in memoria, ovvero bisogna fare attenzione a non scrivere (fase WB) troppo presto. Se lo si fa e poi si scopre che un'istruzione successiva ha generato un'eccezione, la scrittura sarebbe già avvenuta e non potremmo più tornare indietro in modo pulito. In altre parole, dopo aver ripristinato lo stato corretto (tramite checkpoint o undo), non si può ripartire da uno stato speculativo o da metà pipeline, ma bisogna ricominciare l’esecuzione delle istruzioni in ordine, partendo dal Program Counter corretto.
+
+\section{Architetture Superscalari}
+L'utilizzo delle pipe porta dei vantaggi non in termini di attraversamento di una istruzione, che rimane invariato, ma in termini di produttività. Per ottenere prestazioni ancora migliori, è possibile realizzare un'architettura con più pipe che eseguono diverse istruzioni in parallelo, così da aumentare la produttività del sistema. Una tale architettura viene chiamata \textbf{Superscalare}. Tuttavia, questa introduce delle problematiche che vanno necessariamente risolte, queste sono:
+\begin{enumerate}
+    \item Le pipe devono condividere un unico accesso in memoria comune per il prelievo delle istruzioni. In altre parole, anche in presenza di più pipe tutte devono leggere dalla stessa memoria. Questo può creare un collo di bottiglia, perché solo una pipeline alla volta può leggere da lì.
+    \item Se le pipe non sono del tutto indipendenti ma condividono delle stazioni, nascono dei problemi di conflitto nell'utilizzo delle unità funzionali condivise. Se due pipeline vogliono usare la stessa unità (ad esempio, la ALU) allo stesso momento, nasce un collisione e una delle due deve aspettare. Questo riduce l'efficienza.
+\end{enumerate}
+
+\subsection{Gestione delle Collisioni}
+La \textbf{gestione delle collisioni} nella architetture superscalari avviene completamente in hardware. Per comprendere al meglio come un processore con una tale architettura gestisca il problema, introduciamo un esempio. Supponiamo che la CPU sia in grado di realizzare addizione e moltiplicazione in floating point. Come possiamo immaginare, alcune delle operazioni presenti nell'addizione potrebbero essere richieste anche dalla moltiplicazione (e viceversa), mappiamo dunque all'interno di una tabella le diverse operazioni necessarie a completare le due [\ref{tab:mul} e \ref{tab:add}].
+
+\begin{table}[ht]
+\centering
+\begin{tabular}{|l|c|c|c|c|c|c|c|}
+\hline
+         & 1 & 2 & 3 & 4 & 5 & 6 & 7 \\
+\hline
+Ex Add   & X &   &   &   &   &   &   \\
+\hline
+Mult     &   & X & X &   &   &   &   \\
+\hline
+Man Add  &   &   & X & X &   &   &   \\
+\hline
+Renorm   &   &   &   &   & X &   & X \\
+\hline
+Round    &   &   &   &   &   & X &   \\
+\hline
+Shift A  &   &   &   &   &   &   &   \\
+\hline
+Lead 1   &   &   &   &   &   &   &   \\
+\hline
+Shift B  &   &   &   &   &   &   &   \\
+\hline
+\end{tabular}
+\caption{7 stadi richiesti dalla moltiplicazione.}
+\label{tab:mul}
+\end{table}
+
+\begin{table}[ht]
+\centering
+\begin{tabular}{|l|c|c|c|c|c|c|c|c|c|}
+\hline
+         & 1 & 2 & 3 & 4 & 5 & 6 & 7 & 8 & 9 \\
+\hline
+Ex Add   & X &   &   &   &   &   &   &   &   \\
+\hline
+Mult     &   &   &   &   &   &   &   &   &   \\
+\hline
+Man Add  &   &   &   & X &   &   &   &   &   \\
+\hline
+Renorm   &   &   &   &   &   &   &   &   & X \\
+\hline
+Round    &   &   &   &   &   &   &   & X &   \\
+\hline
+Shift A  &   & X & X &   &   &   &   &   &   \\
+\hline
+Lead 1   &   &   &   &   & X &   &   &   &   \\
+\hline
+Shift B  &   &   &   &   &   & X & X &   &   \\
+\hline
+\end{tabular}
+\caption{9 stadi richiesti dall'addizione.}
+\label{tab:add}
+\end{table}
+
+L'introduzione di tali tabelle semplifica notevolmente la scrittura del \textbf{vettore delle collisioni}, ovvero un particolare vettore binario utilizzato dal compilatore per gestire il problema dei conflitti tra pipe. Poniamoci nell'ipotesi semplificativa di due sole pipe, in modo da visualizzare pù facilmente il processo. Per ricavare il vettore, è sufficiente sovrapporre le tabelle delle operazioni che vogliamo eseguire, opportunamente shiftate a seconda di quale delle due sia eseguita prima. Ad esempio, se vogliamo eseguire una moltiplicazione X e al ciclo di clock successivo un'altra moltiplicazione Y, la sovrapposizione delle tabelle fornisce il seguente risultato [\ref{tab:collision}].
+
+\begin{table}[ht]
+\centering
+\begin{tabular}{|l|c|c|c|c|c|c|c|}
+\hline
+         & 1 & 2 & 3 & 4 & 5 & 6 & 7 \\
+\hline
+Ex Add   & X & Y &   &   &   &   &   \\
+\hline
+Mult     &   & X & XY & Y &   &   &   \\
+\hline
+Man Add  &   &   & X & XY & Y &   &   \\
+\hline
+Renorm   &   &   &   &   & X & Y & X \\
+\hline
+Round    &   &   &   &   &   & X & Y \\
+\hline
+Shift A  &   &   &   &   &   &   &   \\
+\hline
+Lead 1   &   &   &   &   &   &   &   \\
+\hline
+Shift B  &   &   &   &   &   &   &   \\
+\hline
+\end{tabular}
+\caption{Collisioni tra due moltiplicazioni sfasate di 1 ciclo di clock.}
+\label{tab:collision}
+\end{table}
+La tabella evidenzia come le due operazioni, eseguite secondo la tempificazione descritta, presentano delle collisioni al tempo 3 e 4 (presenza contemporanea di X e Y). Ripetendo la sovrapposizione appena mostrata per diverse tempificazioni (dopo 2 cicli, dopo 3 cicli, eccetera), è possibile giungere al corrispondente vettore delle collisioni: 110000. \MakeUppercase{è} fondamentale ribadire che il vettore si limita solamente a segnalare la presenza di una collisione (1 nella stringa) nel caso in cui le operazioni venissero eseguite con quella tempificazione, ma ciò non ha niente a che vedere con le fasi della pipeline. In altre parole, se nella stringa c'è un 1 nella seconda posizione, questo NON significa che la collisione riguarda la fase di decodifica. 
+\\
+\\
+\MakeUppercase{è} da notare come in tal caso non valga la proprietà commutativa, realizzando infatti prima una moltiplicazione e poi un'addizione non ci sarebbe alcuna collisione. Nel nostro esempio ci siamo fermati a realizzare il collision vector per 1 solo caso, ovvero quello in cui una moltiplicazione segue una moltiplicazione. In generale, è necessario costruirlo per tutte le possibili combinazioni di operazioni (\textit{mul} segue \textit{add}, \textit{add} segue \textit{add}, eccetera). Se per ipotesi avessimo \(n\) istruzioni da realizzare, sarebbe necessario costruire \(2^n\) vettori, complicando notevolmente il lavoro del compilatore.
+\\
+\\
+Ritorniamo all'esempio e cerchiamo di capire come il compilatore gestisca le collisioni per una generica sequenza di operazioni, che supponiamo essere: \textit{add, mul, mul}. \MakeUppercase{è} innanzitutto necessario costruire il vettore di collisione per le operazioni \textit{add-mul} e \textit{mul-mul}. A questo punto, bisogna inserire la seconda moltiplicazione tenendo conto sia della moltiplicazione precedente che della prima addizione. In generale potrebbero presentarsi diverse combinazioni delle operazioni da eseguite, per cui la verifica dei conflitti tra pipe avviene tramite un \textbf{sistema di decisione} completamente realizzato in hardware, con una struttura fatta nel seguente modo [\ref{fig:super-collisioni}].
+\begin{figure}[!h]
+    \centering
+    \includegraphics[width=0.65\linewidth]{img/superscalari_collisioni.png}
+    \caption{Hardware per la gestione delle collisioni.}
+    \label{fig:super-collisioni}
+\end{figure}
+In particolare, il registro a scorrimento fa proseguire la "storia" delle istruzioni, mentre la OR "unisce" la storia precedente con la nuova. Quindi, la OR garantisce che non ci sia collisione né con l'istruzione che stiamo aggiungendo, né con la storia di istruzioni precedenti. I segnali di \textit{multiply granted} e \textit{add granted}, indicano rispettivamente la possibilità di eseguire la moltiplicazione e l'addizione. I segnali \textit{grant multiply} e \textit{grant add}, invece, abilitano le rispettive operazioni quando assumono valore 0. Il motivo per cui tali segnali sono attivi sullo 0 è semplice, la OR mette in relazione la storia passata (presente nel registro a scorrimento) e l'operazione che vogliamo eseguire (descritta dal vettore delle collisioni), se la OR bit a bit tra i due non genera conflitti, allora il bit che esce dallo shift register è uno 0. \MakeUppercase{è} fondamentale notare come la struttura sia suddivisa in due parti, quella superiore che riguarda soltanto la moltiplicazione, e quella inferiore che invece riguarda l'addizione.
+\\
+\\
+C'è da osservare che i problemi relativi a una tale soluzione sopraggiungono in corrispondenza di istruzioni di salto. In tal caso, a seconda o meno della verifica della condizione di salto, bisogna arrestare non solo una pipe, ma molteplici e gestirne di conseguenza il riavvio. Considerando che i salti costituiscono circa il 25\% delle istruzioni, una semplice soluzione consiste nel dedicare una pipe specifica alla predizione dei salti. Questa predizione andrebbe elaborata il prima possibile, in modo da ridurre al minimo gli inconvenienti all'interno delle restanti pipe ed aumentare quindi l'efficienza complessiva del sistema.
+\\
+\\
+Un tale tipo di soluzione hardware per la gestione delle collisioni è tipica dei sistemi \textbf{DSP} (Digital Signal Processor), come quelli usati per audio, video, telecomunicazioni. In particolare, il suo utilizzo permette di schedulare le istruzioni nel modo più efficiente possibile evitando stalli o rallentamenti.
